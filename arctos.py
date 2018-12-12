@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
 
-import os
 from sys import argv
 import json
 import requests
-import operator
 import pandas as pd
 import numpy as np
 from mpl_finance import candlestick_ohlc
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import datetime as dt
 import techs
 
 
