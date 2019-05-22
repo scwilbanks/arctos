@@ -1,78 +1,79 @@
 #!/usr/bin/env python3
 
+"""
+Arctos is a stock market price and technical indicator charting program. The
+data is provided by IEX Cloud.
+"""
+
 
 from sys import argv
 import json
 import requests
 import pandas as pd
-import numpy as np
-from mpl_finance import candlestick_ohlc
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import techs
-
+from candlestick import candlestick_ohlc
 
 plt.style.use('ggplot')
 
-stock = argv[1]
-time = argv[2]
-tech = argv[3]
+
+STOCK = argv[1]
+TIME = argv[2]
+TECH = argv[3]
 if len(argv) > 4:
-    arg1 = argv[4]
+    TECHARG = argv[4]
 else:
-    arg1 = None
+    TECHARG = None
+
+def get_stock_data_frame(time, stock):
+
+    """
+    Requests data from the IEX API and creates Pandas DataFrame
+    """
+
+    print("Getting", time, "stock data for", stock)
+    url = 'https://api.iextrading.com/1.0/stock/'+stock+'/chart/'+time
+    req = requests.get(url)
+    print(url)
+
+    print("Parsing data.")
+    rjson = req.text
+
+    rdata = json.loads(rjson)
+
+    dates = []
+    openprices = []
+    highprices = []
+    lowprices = []
+    closeprices = []
+    volumes = []
+
+    for i in rdata:
+        date = i['date']
+        dates.append(date)
+        openprices.append(float(i['open']))
+        highprices.append(float(i['high']))
+        lowprices.append(float(i['low']))
+        closeprices.append(float(i['close']))
+        volumes.append(float(i['volume']))
+
+    index = pd.DatetimeIndex(dates, dtype='datetime64[ns]')
+    _open = pd.Series(openprices, index=index)
+    high = pd.Series(highprices, index=index)
+    low = pd.Series(lowprices, index=index)
+    close = pd.Series(closeprices, index=index)
+    data_frame_data = {'Open' : _open, 'High' : high, 'Low' : low, 'Close' : close}
+
+    return pd.DataFrame(data_frame_data)
 
 
-def GetStockDataFrame(time, stock):
+def plot_data(data):
 
-    if False:
-        pass
-    else:
-        print("Getting", time, "stock data for", stock)
-        url = 'https://api.iextrading.com/1.0/stock/'+stock+'/chart/'+time
-        r = requests.get(url)
-        print(url)
+    """
+    Takes Pandas DataFrame with prices information and plots onto graph.
+    """
 
-        print("Parsing data.")
-        rjson = r.text
-
-        rdata = json.loads(rjson)
-
-        dates = []
-        openprices = []
-        highprices = []
-        lowprices = []
-        closeprices = []
-        volumes = []
-
-        for i in rdata:
-            date = i['date']
-            dates.append(date)
-            openprices.append(float(i['open']))
-            highprices.append(float(i['high']))
-            lowprices.append(float(i['low']))
-            closeprices.append(float(i['close']))
-            volumes.append(float(i['volume']))
-
-        index = pd.DatetimeIndex(dates, dtype='datetime64[ns]')
-        o = pd.Series(openprices, index=index)
-        h = pd.Series(highprices, index=index)
-        l = pd.Series(lowprices, index=index)
-        c = pd.Series(closeprices, index=index)
-        v = pd.Series(volumes, index=index)
-        d = { 'Open' : o,
-              'High' : h,
-              'Low' : l,
-              'Close' : c}
-
-        return pd.DataFrame(d)
-
-
-def Backtest(data, tech):
-    pass
-
-
-def PlotData(data):
     print("Plotting.")
 
     # Changing dates to floating point, also moves Date out of index
@@ -81,7 +82,7 @@ def PlotData(data):
     df_ohlc.rename(columns={'index': 'Date'}, inplace=True)
 
     # Rearrange columns for ohlc
-    columns = ['Date', 'Open', 'High','Low','Close']
+    columns = ['Date', 'Open', 'High', 'Low', 'Close']
     df_ohlc = df_ohlc[columns]
 
     fig = plt.figure()
@@ -94,32 +95,34 @@ def PlotData(data):
     plt.xlabel("Date")
 
 
-def PlotTech(data, tech, arg1 = None):
-    
+def plot_tech(data, tech, techarg=None):
+
+    """
+    Plots technical indicator.
+    """
+
     index = data.index
     lines = []
-    if tech == 'SMA':
-        days = int(arg1)
+    if TECH == 'SMA':
+        days = int(techarg)
         vals = techs.SMA(data["Close"].tolist()).calc(days)
         lines.append(pd.Series(vals, index=index))
-    elif tech == 'EMA':
-        days = int(arg1)
+    elif TECH == 'EMA':
+        days = int(techarg)
         vals = techs.EMA(data["Close"].tolist()).calc(days)
         lines.append(pd.Series(vals, index=index))
-    elif tech == 'MACD':
+    elif TECH == 'MACD':
         macdvals, macdsignal = techs.MACD(data['Close'].tolist()).calc()
         lines.append(pd.Series(macdvals, index=index))
         lines.append(pd.Series(macdsignal, index=index))
 
-        #mvs.plot()#secondary_y=True)
-        #mss.plot()#secondary_y=True)
     for line in lines:
         line.plot()
 
 
-data = GetStockDataFrame(time, stock)
+data = get_stock_data_frame(TIME, STOCK)
 
-PlotData(data)
-PlotTech(data, tech, arg1)
+plot_data(data)
+plot_tech(data, TECH, TECHARG)
 
 plt.show()

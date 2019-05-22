@@ -1,3 +1,8 @@
+
+"""
+This module provides the classes for each technical indicator.
+"""
+
 from operator import sub
 import random
 import numpy as np
@@ -5,6 +10,11 @@ import pandas as pd
 
 
 class SMA:
+
+    """
+    Simple Moving Average
+    """
+
     def __init__(self, prices):
         self.prices = prices
 
@@ -31,6 +41,11 @@ class SMA:
         return values
 
 class EMA:
+
+    """
+    Exponential Moving Average
+    """
+    
     def __init__(self, prices):
         self.prices = prices
 
@@ -62,6 +77,11 @@ class EMA:
         return values
 
 class MACD:
+
+    """"
+    Moving Average Convergence Divergence
+    """
+
     def __init__(self, prices):
         self.prices = prices
 
@@ -76,5 +96,3 @@ class MACD:
         values = list(map(sub, EMA(prices).calc(12), EMA(prices).calc(26)))
         signal = EMA(values).calc(9)
         return values, signal
-
-
